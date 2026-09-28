@@ -1,0 +1,38 @@
+services:
+  db:
+    platform: linux/amd64
+    image: postgis/postgis:18-3.6
+    environment:
+      - USERNAME=docker
+      - PASS=docker
+
+  qgisserver:
+    platform: linux/amd64
+    image: qgis/qgis-server:4.2-trixie
+    hostname: qgis-server
+    environment:
+      # set to '' if you plan on hosting 
+      # multiple projects on this server an
+      # then add map=<path to project> to your GET
+      # requests
+      - QGIS_PROJECT_FILE=/project/project.qgz
+      # 0 = highest level, shows all messages
+      # 5 = very quiet
+      - QGIS_SERVER_LOG_LEVEL=0
+    volumes:
+      - ./project:/project
+    ports:
+      - "0.0.0.0:8081:80"
+    links:
+      - db:db
+
+  nginx:
+    image: nginx
+    hostname: nginx
+    volumes:
+      - ./nginx-conf:/etc/nginx/conf.d
+    ports:
+      - "0.0.0.0:8080:80"
+    links:
+      - qgisserver:qgisserver
+
