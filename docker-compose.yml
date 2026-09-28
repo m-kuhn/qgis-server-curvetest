@@ -3,22 +3,31 @@ services:
     platform: linux/amd64
     image: postgis/postgis:18-3.6
     environment:
-      - USERNAME=docker
-      - PASS=docker
+      - POSTGRES_USER=docker
+      - POSTGRES_PASSWORD=docker
+      - POSTGRES_DB=postgres
 
   qgisserver:
     platform: linux/amd64
     image: qgis/qgis-server:4.2-trixie
     hostname: qgis-server
+    command: >
+      /bin/bash -lc "rm -f /tmp/.X99-lock /run/nginx.pid /run/qgis.pid;
+      export HOME=/var/lib/qgis;
+      Xvfb :99 -ac -screen 0 1280x1024x16 +extension GLX +render -noreset >/dev/null 2>&1 &
+      nginx;
+      exec spawn-fcgi -n -u www-data -g www-data -d /var/lib/qgis -P /run/qgis.pid -p 9993 -- /usr/lib/cgi-bin/qgis_mapserv.fcgi"
     environment:
-      # set to '' if you plan on hosting 
-      # multiple projects on this server an
+      - HOME=/var/lib/qgis
+      # set to '' if you plan on hosting
+      # multiple projects on this server and
       # then add map=<path to project> to your GET
       # requests
       - QGIS_PROJECT_FILE=/project/project.qgz
       # 0 = highest level, shows all messages
       # 5 = very quiet
       - QGIS_SERVER_LOG_LEVEL=0
+      - QGIS_SERVER_LOG_STDERR=true
     volumes:
       - ./project:/project
     ports:
